@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2007 University of Washington
+ * Copyright (c) 2017 NITK Surathkal
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -14,6 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * Authors: Nandita G <gm.nandita@gmail.com>
+ *          Mohit P. Tahiliani <tahiliani@nitk.edu.in>
+ *
  */
 
 #ifndef DROPRANDOM_H
@@ -43,16 +47,13 @@ public:
    * Creates a droprandom queue with a maximum size of 100 packets by default
    */
   DropRandomQueue ();
-
-// DropRandomQueue (Queue<Item>);
   virtual ~DropRandomQueue ();
-
   virtual bool Enqueue (Ptr<Item> item);
   virtual Ptr<Item> Dequeue (void);
   virtual Ptr<Item> Remove (void);
   virtual Ptr<const Item> Peek (void) const;
   Ptr<Item> RemoveRandom (uint32_t);
-  Ptr<const Item> PeekRandom (uint32_t) const;
+  bool EnqueueRandom (uint32_t,Ptr<Item> item);
 
 private:
   using Queue<Item>::Head;
@@ -81,20 +82,11 @@ DropRandomQueue<Item>::GetTypeId (void)
 }
 
 template <typename Item>
-DropRandomQueue<Item>::DropRandomQueue () :
-  Queue<Item> ()
+DropRandomQueue<Item>::DropRandomQueue ()
+  : Queue<Item> ()
 {
   QUEUE_LOG (LOG_LOGIC, "DropRandomQueue(" << this << ")");
 }
-
-/*template <typename Item>
-DropRandomQueue<Item>::DropRandomQueue () :
-  Queue<Item> ()
-{
-  QUEUE_LOG (LOG_LOGIC, "DropRandomQueue(" << this << ")");
-}*/
-
-
 
 template <typename Item>
 DropRandomQueue<Item>::~DropRandomQueue ()
@@ -151,12 +143,12 @@ Ptr<Item>
 DropRandomQueue<Item>::RemoveRandom (uint32_t pos)
 {
   QUEUE_LOG (LOG_LOGIC, "DropRandomQueue:RemoveRandom(" << this << ")");
-  
+
   auto ptr = Head ();
-  for(uint32_t i = 0; i < pos; i++)
-  {
-    ptr++;
-  }
+  for (uint32_t i = 0; i < pos; i++)
+    {
+      ptr++;
+    }
   Ptr<Item> item = DoRemove (ptr);
 
   QUEUE_LOG (LOG_LOGIC, "Removed " << item);
@@ -165,17 +157,18 @@ DropRandomQueue<Item>::RemoveRandom (uint32_t pos)
 }
 
 template <typename Item>
-Ptr<const Item>
-DropRandomQueue<Item>::PeekRandom (uint32_t pos) const
+bool
+DropRandomQueue<Item>::EnqueueRandom (uint32_t pos,Ptr<Item> item)
 {
-  QUEUE_LOG (LOG_LOGIC, "DropRandomQueue:PeekRandom(" << this << ")");
-  
+  QUEUE_LOG (LOG_LOGIC, "DropRandomQueue:EnqueueRandom(" << this << ")");
+
   auto ptr = Head ();
-  for(uint32_t i = 0; i < pos; i++)
-  {
-    ptr++;
-  }
-  return DoPeek (ptr);
+  for (uint32_t i = 1; i < pos; i++)
+    {
+      ptr++;
+    }
+  return DoEnqueue (ptr, item);
+
 }
 
 } // namespace ns3

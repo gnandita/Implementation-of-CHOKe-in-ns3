@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright © 2011 Marcos Talau
+ * Copyright  2011 Marcos Talau
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -17,7 +17,7 @@
  *
  * Author: Marcos Talau (talau@users.sourceforge.net)
  *
- * 
+ *
  *
  * This file incorporates work covered by the following copyright and
  * permission notice:
@@ -88,14 +88,14 @@ public:
    * \brief Destructor
    *
    * Destructor
-   */ 
+   */
   virtual ~ChokeQueueDisc ();
 
   /**
    * \brief Stats
    */
   typedef struct
-  {   
+  {
     uint32_t unforcedDrop;  //!< Early probability drops
     uint32_t forcedDrop;    //!< Forced drops, qavg > max threshold
     uint32_t qLimDrop;      //!< Drops due to queue limits
@@ -103,7 +103,7 @@ public:
     uint32_t forcedMark;    //!< Forced marks, qavg > max threshold
   } Stats;
 
-  /** 
+  /**
    * \brief Drop types
    */
   enum
@@ -143,7 +143,7 @@ public:
    * \returns The queue size in bytes or packets.
    */
   uint32_t GetQueueSize (void);
-  
+
   /**
    * \brief Set the limit of the queue.
    *
@@ -166,14 +166,14 @@ public:
    */
   Stats GetStats ();
 
- /**
-  * Assign a fixed random variable stream number to the random variables
-  * used by this model.  Return the number of streams (possibly zero) that
-  * have been assigned.
-  *
-  * \param stream first stream index to use
-  * \return the number of stream indices assigned by this model
-  */
+  /**
+   * Assign a fixed random variable stream number to the random variables
+   * used by this model.  Return the number of streams (possibly zero) that
+   * have been assigned.
+   *
+   * \param stream first stream index to use
+   * \return the number of stream indices assigned by this model
+   */
   int64_t AssignStreams (int64_t stream);
   int64_t AssignStreamsRnd (int64_t stream);
 protected:
@@ -225,7 +225,7 @@ private:
    * \param maxP max_p
    * \returns Prob. of packet drop before "count"
    */
-  double CalculatePNew (double qAvg, double , double vA,
+  double CalculatePNew (double qAvg, double, double vA,
                         double vB, double vC, double vD, double maxP);
   /**
    * \brief Returns a probability using these function parameters for the DropEarly function

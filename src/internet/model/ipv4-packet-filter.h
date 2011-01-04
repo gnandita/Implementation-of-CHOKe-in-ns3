@@ -76,23 +76,6 @@ private:
   uint32_t m_perturbation; //!< hash perturbation value
 };
 
-class ChokeIpv4PacketFilter : public Ipv4PacketFilter {
-public:
-  /**
-   * \brief Get the type ID.
-   * \return the object TypeId
-   */
-  static TypeId GetTypeId (void);
-
-  ChokeIpv4PacketFilter ();
-  virtual ~ChokeIpv4PacketFilter ();
-
-private:
-  virtual int32_t DoClassify (Ptr<QueueDiscItem> item) const;
-
-  uint32_t m_perturbation; //!< hash perturbation value
-};
-
 } // namespace ns3
 
 #endif /* IPV4_PACKET_FILTER */

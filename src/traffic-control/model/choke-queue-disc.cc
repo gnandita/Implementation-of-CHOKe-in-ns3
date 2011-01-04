@@ -1,6 +1,6 @@
-// /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
+//* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright © 2011 Marcos Talau
+ * Copyright (c) 2017 NITK Surathkal
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -15,40 +15,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Author: Marcos Talau (talau@users.sourceforge.net)
+ * Authors: Nandita G <gm.nandita@gmail.com>
+ *          Mohit P. Tahiliani <tahiliani@nitk.edu.in>
  *
- * 
- *
- *
- * This file incorporates work covered by the following copyright and  
- * permission notice:  
- *
- * Copyright (c) 1990-1997 Regents of the University of California.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the University nor of the Laboratory may be used
- *    to endorse or promote products derived from this software without
- *    specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
  */
 
 #include "ns3/log.h"
@@ -59,7 +28,6 @@
 #include "ns3/abort.h"
 #include "choke-queue-disc.h"
 #include "ns3/drop-random-queue.h"
-#include "ns3/net-device-queue-interface.h"
 
 namespace ns3 {
 
@@ -71,7 +39,7 @@ TypeId ChokeQueueDisc::GetTypeId (void)
 {
   static TypeId tid = TypeId ("ns3::ChokeQueueDisc")
     .SetParent<QueueDisc> ()
-    .SetGroupName("TrafficControl")
+    .SetGroupName ("TrafficControl")
     .AddConstructor<ChokeQueueDisc> ()
     .AddAttribute ("Mode",
                    "Determines unit for QueueLimit",
@@ -124,12 +92,12 @@ TypeId ChokeQueueDisc::GetTypeId (void)
                    BooleanValue (false),
                    MakeBooleanAccessor (&ChokeQueueDisc::m_isNs1Compat),
                    MakeBooleanChecker ())
-    .AddAttribute ("LinkBandwidth", 
+    .AddAttribute ("LinkBandwidth",
                    "The CHOKe link bandwidth",
                    DataRateValue (DataRate ("1.5Mbps")),
                    MakeDataRateAccessor (&ChokeQueueDisc::m_linkBandwidth),
                    MakeDataRateChecker ())
-    .AddAttribute ("LinkDelay", 
+    .AddAttribute ("LinkDelay",
                    "The CHOKe link delay",
                    TimeValue (MilliSeconds (20)),
                    MakeTimeAccessor (&ChokeQueueDisc::m_linkDelay),
@@ -149,8 +117,8 @@ TypeId ChokeQueueDisc::GetTypeId (void)
   return tid;
 }
 
-ChokeQueueDisc::ChokeQueueDisc () :
-  QueueDisc ()
+ChokeQueueDisc::ChokeQueueDisc ()
+  : QueueDisc ()
 {
   NS_LOG_FUNCTION (this);
   m_uv = CreateObject<UniformRandomVariable> ();
@@ -185,7 +153,6 @@ ChokeQueueDisc::GetMode (void)
   return m_mode;
 }
 
-
 void
 ChokeQueueDisc::SetQueueLimit (uint32_t lim)
 {
@@ -209,7 +176,7 @@ ChokeQueueDisc::GetStats ()
   return m_stats;
 }
 
-int64_t 
+int64_t
 ChokeQueueDisc::AssignStreams (int64_t stream)
 {
   NS_LOG_FUNCTION (this << stream);
@@ -217,7 +184,7 @@ ChokeQueueDisc::AssignStreams (int64_t stream)
   return 1;
 }
 
-int64_t 
+int64_t
 ChokeQueueDisc::AssignStreamsRnd (int64_t stream)
 {
   NS_LOG_FUNCTION (this << stream);
@@ -272,37 +239,34 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
   m_countBytes += item->GetSize ();
 
   uint32_t dropType = DTYPE_NONE;
-  
+  std::cout << "queue average:" << m_qAvg;
   if (m_qAvg >= m_minTh && nQueued > 1)
     {
-     m_rnd->SetAttribute("Min", DoubleValue(0));
-     m_rnd->SetAttribute("Max", DoubleValue(nQueued));
-    // uint32_t randompos = m_rnd->GetInteger ();      
-     Ptr<Queue<QueueDiscItem>> queue =  GetInternalQueue (0);
-     Ptr<DropRandomQueue<QueueDiscItem>> q = queue->GetObject<DropRandomQueue<QueueDiscItem>>();
-   /*  Ptr<const QueueDiscItem> randomitem = q->PeekRandom(randompos);
-     int32_t hash = Classify (item);
-     int32_t hashrnd = Classify (DynamicCast<QueueDiscItem>(q->PeekRandom(randompos)));       
-     if(hash == hashrnd)
+      m_rnd->SetAttribute ("Min", DoubleValue (0));
+      m_rnd->SetAttribute ("Max", DoubleValue (nQueued));
+      uint32_t randompos = m_rnd->GetInteger ();
+      Ptr<Queue<QueueDiscItem> > queue =  GetInternalQueue (0);
+      Ptr<DropRandomQueue<QueueDiscItem> > q = queue->GetObject<DropRandomQueue<QueueDiscItem> > ();
+      Ptr<QueueDiscItem> randomitem = q->RemoveRandom (randompos);
+      int32_t hash = Classify (item);
+      int32_t hashrnd = Classify (randomitem);
+      if (hash == hashrnd)
         {
-         GetInternalQueue (0)->RemoveRandom (u);
-         Drop(item);
-         return false;
+          Drop (item);
+          return false;
         }
-    */    
+      else
+        {
+          q->EnqueueRandom (randompos,randomitem);
+        }
       if (m_qAvg >= m_maxTh)
         {
+          std::cout << "above max";
           NS_LOG_DEBUG ("adding DROP FORCED MARK");
           dropType = DTYPE_FORCED;
         }
       else if (m_old == 0)
         {
-          /* 
-           * The average queue size has just crossed the
-           * threshold from below to above "minthresh", or
-           * from above "minthresh" with an empty queue to
-           * above "minthresh" with a nonempty queue.
-           */
           m_count = 1;
           m_countBytes = item->GetSize ();
           m_old = 1;
@@ -313,7 +277,7 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
           dropType = DTYPE_UNFORCED;
         }
     }
-  else 
+  else
     {
       // No packets are being dropped
       m_vProb = 0.0;
@@ -390,7 +354,7 @@ ChokeQueueDisc::InitializeParams (void)
   double th_diff = (m_maxTh - m_minTh);
   if (th_diff == 0)
     {
-      th_diff = 1.0; 
+      th_diff = 1.0;
     }
   m_vA = 1.0 / th_diff;
   m_curMaxP = 1.0 / m_lInterm;
@@ -400,13 +364,13 @@ ChokeQueueDisc::InitializeParams (void)
 /*
  * If m_qW=0, set it to a reasonable value of 1-exp(-1/C)
  * This corresponds to choosing m_qW to be of that value for
- * which the packet time constant -1/ln(1-m)qW) per default RTT 
+ * which the packet time constant -1/ln(1-m)qW) per default RTT
  * of 100ms is an order of magnitude more than the link capacity, C.
  *
  * If m_qW=-1, then the queue weight is set to be a function of
- * the bandwidth and the link propagation delay.  In particular, 
- * the default RTT is assumed to be three times the link delay and 
- * transmission delay, if this gives a default RTT greater than 100 ms. 
+ * the bandwidth and the link propagation delay.  In particular,
+ * the default RTT is assumed to be three times the link delay and
+ * transmission delay, if this gives a default RTT greater than 100 ms.
  *
  * If m_qW=-2, set it to a reasonable value of 1-exp(-10/C).
  */
@@ -429,7 +393,7 @@ ChokeQueueDisc::InitializeParams (void)
       m_qW = 1.0 - std::exp (-10.0 / m_ptc);
     }
 
-  NS_LOG_DEBUG ("\tm_delay " << m_linkDelay.GetSeconds () << "; m_isWait " 
+  NS_LOG_DEBUG ("\tm_delay " << m_linkDelay.GetSeconds () << "; m_isWait "
                              << m_isWait << "; m_qW " << m_qW << "; m_ptc " << m_ptc
                              << "; m_minTh " << m_minTh << "; m_maxTh " << m_maxTh
                              << "; th_diff " << th_diff
@@ -443,7 +407,7 @@ ChokeQueueDisc::Estimator (uint32_t nQueued, uint32_t m, double qAvg, double qW)
 {
   NS_LOG_FUNCTION (this << nQueued << m << qAvg << qW);
 
-  double newAve = qAvg * pow(1.0-qW, m);
+  double newAve = qAvg * pow (1.0 - qW, m);
   newAve += qW * nQueued;
   return newAve;
 }
@@ -512,14 +476,14 @@ ChokeQueueDisc::DropEarly (Ptr<QueueDiscItem> item, uint32_t qSize)
 // Returns a probability using these function parameters for the DropEarly funtion
 double
 ChokeQueueDisc::CalculatePNew (double qAvg, double maxTh, double vA,
-                         double vB, double vC, double vD, double maxP)
+                               double vB, double vC, double vD, double maxP)
 {
   NS_LOG_FUNCTION (this << qAvg << maxTh  << vA << vB << vC << vD << maxP);
   double p;
 
   if (qAvg >= maxTh)
     {
-      /* 
+      /*
        * OLD: p continues to range linearly above max_p as
        * the average queue size ranges above th_max.
        * NEW: p is set to 1.0
@@ -545,9 +509,9 @@ ChokeQueueDisc::CalculatePNew (double qAvg, double maxTh, double vA,
 }
 
 // Returns a probability using these function parameters for the DropEarly funtion
-double 
+double
 ChokeQueueDisc::ModifyP (double p, uint32_t count, uint32_t countBytes,
-                   uint32_t meanPktSize, bool isWait, uint32_t size)
+                         uint32_t meanPktSize, bool isWait, uint32_t size)
 {
   NS_LOG_FUNCTION (this << p << count << countBytes << meanPktSize << isWait << size);
   double count1 = (double) count;
@@ -672,25 +636,23 @@ ChokeQueueDisc::CheckConfig (void)
 
   if (GetNPacketFilters () == 0)
     {
-      NS_LOG_ERROR ("ChokeQueueDisc should have atleast 1 packet filter");
+      NS_LOG_ERROR ("ChokeQueueDisc should have atleast one packet filter");
       return false;
     }
 
   if (GetNInternalQueues () == 0)
     {
       // create a DropRandom queue
-         Ptr<InternalQueue> queue = CreateObjectWithAttributes<DropRandomQueue<QueueDiscItem> > ("Mode", EnumValue (m_mode));
-     
-//      Ptr<InternalQueue> queue = CreateObjectWithAttributes<DropRandomQueue<Packet> > ("Mode", EnumValue (m_mode));
+      Ptr<InternalQueue> queue = CreateObjectWithAttributes<DropRandomQueue<QueueDiscItem> > ("Mode", EnumValue (m_mode));
       if (m_mode == QUEUE_DISC_MODE_PACKETS)
-       {
+        {
           queue->SetMaxPackets (m_queueLimit);
-       }
+        }
       else
-       {
+        {
           queue->SetMaxBytes (m_queueLimit);
-       } 
-      
+        }
+
       AddInternalQueue (queue);
     }
 
@@ -700,15 +662,15 @@ ChokeQueueDisc::CheckConfig (void)
       return false;
     }
 
-  if ((GetInternalQueue (0)->GetMode () == QueueBase::QUEUE_MODE_PACKETS && m_mode == QUEUE_DISC_MODE_BYTES) ||
-      (GetInternalQueue (0)->GetMode () == QueueBase::QUEUE_MODE_BYTES && m_mode == QUEUE_DISC_MODE_PACKETS))
+  if ((GetInternalQueue (0)->GetMode () == QueueBase::QUEUE_MODE_PACKETS && m_mode == QUEUE_DISC_MODE_BYTES)
+      || (GetInternalQueue (0)->GetMode () == QueueBase::QUEUE_MODE_BYTES && m_mode == QUEUE_DISC_MODE_PACKETS))
     {
       NS_LOG_ERROR ("The mode of the provided queue does not match the mode set on the ChokeQueueDisc");
       return false;
     }
 
-  if ((m_mode ==  QUEUE_DISC_MODE_PACKETS && GetInternalQueue (0)->GetMaxPackets () < m_queueLimit) ||
-      (m_mode ==  QUEUE_DISC_MODE_BYTES && GetInternalQueue (0)->GetMaxBytes () < m_queueLimit))
+  if ((m_mode ==  QUEUE_DISC_MODE_PACKETS && GetInternalQueue (0)->GetMaxPackets () < m_queueLimit)
+      || (m_mode ==  QUEUE_DISC_MODE_BYTES && GetInternalQueue (0)->GetMaxBytes () < m_queueLimit))
     {
       NS_LOG_ERROR ("The size of the internal queue is less than the queue disc limit");
       return false;
