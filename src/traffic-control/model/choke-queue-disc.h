@@ -192,7 +192,7 @@ private:
    * \brief Initialize the queue parameters.
    *
    * Note: if the link bandwidth changes in the course of the
-   * simulation, the bandwidth-dependent RED parameters do not change.
+   * simulation, the bandwidth-dependent CHOKe parameters do not change.
    * This should be fixed, but it would require some extra parameters,
    * and didn't seem worth the trouble...
    */
@@ -240,7 +240,7 @@ private:
   double ModifyP (double p, uint32_t count, uint32_t countBytes,
                   uint32_t meanPktSize, bool wait, uint32_t size);
 
-  Stats m_stats; //!< RED statistics
+  Stats m_stats; //!< CHOKe statistics
 
   // ** Variables supplied by user
   QueueDiscMode m_mode;     //!< Mode (Bytes or packets)
@@ -252,16 +252,13 @@ private:
   uint32_t m_queueLimit;    //!< Queue limit in bytes / packets
   double m_qW;              //!< Queue weight given to cur queue size sample
   double m_lInterm;         //!< The max probability of dropping a packet
-  Time m_targetDelay;       //!< Target average queuing delay in ARED
-  Time m_interval;          //!< Time interval to update m_curMaxP
-  Time m_rtt;               //!< Rtt to be considered while automatically setting m_bottom in ARED
   bool m_isNs1Compat;       //!< Ns-1 compatibility
   DataRate m_linkBandwidth; //!< Link bandwidth
   Time m_linkDelay;         //!< Link delay
   bool m_useEcn;            //!< True if ECN is used (packets are marked instead of being dropped)
   bool m_useHardDrop;       //!< True if packets are always dropped above max threshold
 
-  // ** Variables maintained by RED
+  // ** Variables maintained by CHOKe
   double m_vProb1;          //!< Prob. of packet drop before "count"
   double m_vA;              //!< 1.0 / (m_maxTh - m_minTh)
   double m_vB;              //!< -m_minTh / (m_maxTh - m_minTh)
@@ -275,12 +272,6 @@ private:
   double m_ptc;             //!< packet time constant in packets/second
   double m_qAvg;            //!< Average queue length
   uint32_t m_count;         //!< Number of packets since last random number generation
-  /**
-   * 0 for default RED
-   * 1 experimental (see red-queue-disc.cc)
-   * 2 experimental (see red-queue-disc.cc)
-   * 3 use Idle packet size in the ptc
-   */
   uint32_t m_cautious;
   Time m_idleTime;          //!< Start of current idle period
 
@@ -289,4 +280,4 @@ private:
 
 }; // namespace ns3
 
-#endif // RED_QUEUE_DISC_H
+#endif // CHOKE_QUEUE_DISC_H

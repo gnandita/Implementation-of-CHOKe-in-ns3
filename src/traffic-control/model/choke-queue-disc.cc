@@ -238,7 +238,7 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
 
   if (m_idle == 1)
     {
-      NS_LOG_DEBUG ("CHOKE Queue Disc is idle.");
+      NS_LOG_DEBUG ("CHOKe Queue Disc is idle.");
       Time now = Simulator::Now ();
 
       if (m_cautious == 3)
@@ -355,17 +355,11 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
   return retval;
 }
 
-/*
- * Note: if the link bandwidth changes in the course of the
- * simulation, the bandwidth-dependent RED parameters do not change.
- * This should be fixed, but it would require some extra parameters,
- * and didn't seem worth the trouble...
- */
 void
 ChokeQueueDisc::InitializeParams (void)
 {
   NS_LOG_FUNCTION (this);
-  NS_LOG_INFO ("Initializing CHOKE params.");
+  NS_LOG_INFO ("Initializing CHOKe params.");
 
   m_cautious = 0;
   m_ptc = m_linkBandwidth.GetBitRate () / (8.0 * m_meanPktSize);
@@ -424,19 +418,6 @@ ChokeQueueDisc::InitializeParams (void)
       m_qW = 1.0 - std::exp (-10.0 / m_ptc);
     }
 
- /* if (m_bottom == 0)
-    {
-      m_bottom = 0.01;
-      // Set bottom to at most 1/W, where W is the delay-bandwidth
-      // product in packets for a connection.
-      // So W = m_linkBandwidth.GetBitRate () / (8.0 * m_meanPktSize * m_rtt.GetSeconds())
-      double bottom1 = (8.0 * m_meanPktSize * m_rtt.GetSeconds()) / m_linkBandwidth.GetBitRate();
-      if (bottom1 < m_bottom)
-        {
-          m_bottom = bottom1;
-        }
-    }
-*/
   NS_LOG_DEBUG ("\tm_delay " << m_linkDelay.GetSeconds () << "; m_isWait " 
                              << m_isWait << "; m_qW " << m_qW << "; m_ptc " << m_ptc
                              << "; m_minTh " << m_minTh << "; m_maxTh " << m_maxTh
