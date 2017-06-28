@@ -58,7 +58,7 @@
 #include "ns3/simulator.h"
 #include "ns3/abort.h"
 #include "choke-queue-disc.h"
-#include "ns3/drop-tail-queue.h"
+#include "ns3/drop-random-queue.h"
 #include "ns3/net-device-queue-interface.h"
 
 namespace ns3 {
@@ -154,6 +154,7 @@ ChokeQueueDisc::ChokeQueueDisc () :
 {
   NS_LOG_FUNCTION (this);
   m_uv = CreateObject<UniformRandomVariable> ();
+  m_rnd = CreateObject<UniformRandomVariable> ();
 }
 
 ChokeQueueDisc::~ChokeQueueDisc ()
@@ -166,6 +167,7 @@ ChokeQueueDisc::DoDispose (void)
 {
   NS_LOG_FUNCTION (this);
   m_uv = 0;
+  m_rnd = 0;
   QueueDisc::DoDispose ();
 }
 
@@ -215,6 +217,13 @@ ChokeQueueDisc::AssignStreams (int64_t stream)
   return 1;
 }
 
+int64_t 
+ChokeQueueDisc::AssignStreamsRnd (int64_t stream)
+{
+  NS_LOG_FUNCTION (this << stream);
+  m_rnd->SetStream (stream);
+  return 1;
+}
 bool
 ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
 {
@@ -263,22 +272,24 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
   m_countBytes += item->GetSize ();
 
   uint32_t dropType = DTYPE_NONE;
+  
   if (m_qAvg >= m_minTh && nQueued > 1)
     {
-  /*  double u = m_uv->GetValue ();      
-      auto i=GetInternalQueue (0)->Head();
-      for(int j=0;j < u && i!=GetInternalQueue (0)-> Tail();j++,i++);
-      Ptr<QueueDiscItem> itemAtU = GetInternalQueue (0)->DoPeek (i-1);
-      hash = Classify (item);
-      hashU = Classify (itemAtU);
-
-      if(hash == hashU)
+     m_rnd->SetAttribute("Min", DoubleValue(0));
+     m_rnd->SetAttribute("Max", DoubleValue(nQueued));
+    // uint32_t randompos = m_rnd->GetInteger ();      
+     Ptr<Queue<QueueDiscItem>> queue =  GetInternalQueue (0);
+     Ptr<DropRandomQueue<QueueDiscItem>> q = queue->GetObject<DropRandomQueue<QueueDiscItem>>();
+   /*  Ptr<const QueueDiscItem> randomitem = q->PeekRandom(randompos);
+     int32_t hash = Classify (item);
+     int32_t hashrnd = Classify (DynamicCast<QueueDiscItem>(q->PeekRandom(randompos)));       
+     if(hash == hashrnd)
         {
-         GetInternalQueue (0)->DoDequeue (i-1);
+         GetInternalQueue (0)->RemoveRandom (u);
          Drop(item);
          return false;
         }
-   */
+    */    
       if (m_qAvg >= m_maxTh)
         {
           NS_LOG_DEBUG ("adding DROP FORCED MARK");
@@ -667,16 +678,19 @@ ChokeQueueDisc::CheckConfig (void)
 
   if (GetNInternalQueues () == 0)
     {
-      // create a DropTail queue
-      Ptr<InternalQueue> queue = CreateObjectWithAttributes<DropTailQueue<QueueDiscItem> > ("Mode", EnumValue (m_mode));
+      // create a DropRandom queue
+         Ptr<InternalQueue> queue = CreateObjectWithAttributes<DropRandomQueue<QueueDiscItem> > ("Mode", EnumValue (m_mode));
+     
+//      Ptr<InternalQueue> queue = CreateObjectWithAttributes<DropRandomQueue<Packet> > ("Mode", EnumValue (m_mode));
       if (m_mode == QUEUE_DISC_MODE_PACKETS)
-        {
+       {
           queue->SetMaxPackets (m_queueLimit);
-        }
+       }
       else
-        {
+       {
           queue->SetMaxBytes (m_queueLimit);
-        }
+       } 
+      
       AddInternalQueue (queue);
     }
 

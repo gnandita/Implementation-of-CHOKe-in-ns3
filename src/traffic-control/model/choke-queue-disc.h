@@ -175,7 +175,7 @@ public:
   * \return the number of stream indices assigned by this model
   */
   int64_t AssignStreams (int64_t stream);
-
+  int64_t AssignStreamsRnd (int64_t stream);
 protected:
   /**
    * \brief Dispose of the object
@@ -276,6 +276,7 @@ private:
   Time m_idleTime;          //!< Start of current idle period
 
   Ptr<UniformRandomVariable> m_uv;  //!< rng stream
+  Ptr<UniformRandomVariable> m_rnd;
 };
 
 }; // namespace ns3
