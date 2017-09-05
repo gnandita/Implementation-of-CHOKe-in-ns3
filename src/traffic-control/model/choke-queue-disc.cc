@@ -28,6 +28,8 @@
 #include "ns3/abort.h"
 #include "choke-queue-disc.h"
 #include "ns3/drop-random-queue.h"
+#include "ns3/ipv4-packet-filter.h"
+#include "ns3/ipv6-packet-filter.h"
 
 namespace ns3 {
 
@@ -51,11 +53,6 @@ TypeId ChokeQueueDisc::GetTypeId (void)
                    "Average of packet size",
                    UintegerValue (500),
                    MakeUintegerAccessor (&ChokeQueueDisc::m_meanPktSize),
-                   MakeUintegerChecker<uint32_t> ())
-    .AddAttribute ("IdlePktSize",
-                   "Average packet size used during idle times. Used when m_cautions = 3",
-                   UintegerValue (0),
-                   MakeUintegerAccessor (&ChokeQueueDisc::m_idlePktSize),
                    MakeUintegerChecker<uint32_t> ())
     .AddAttribute ("Wait",
                    "True for waiting between dropped packets",
@@ -193,7 +190,7 @@ ChokeQueueDisc::AssignStreamsRnd (int64_t stream)
 }
 bool
 ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
-{
+{ 
   NS_LOG_FUNCTION (this << item);
 
   uint32_t nQueued = 0;
@@ -205,9 +202,10 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
     }
   else if (GetMode () == QUEUE_DISC_MODE_PACKETS)
     {
-      NS_LOG_DEBUG ("Enqueue in packets mode");
+      NS_LOG_DEBUG ("Enqueue in packets mode\n");
       nQueued = GetInternalQueue (0)->GetNPackets ();
-    }
+      std::cout<< "nQueued "<<nQueued;
+     }
 
   // simulate number of packets arrival during idle period
   uint32_t m = 0;
@@ -216,63 +214,71 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
     {
       NS_LOG_DEBUG ("CHOKe Queue Disc is idle.");
       Time now = Simulator::Now ();
-
-      if (m_cautious == 3)
-        {
-          double ptc = m_ptc * m_meanPktSize / m_idlePktSize;
-          m = uint32_t (ptc * (now - m_idleTime).GetSeconds ());
-        }
-      else
-        {
-          m = uint32_t (m_ptc * (now - m_idleTime).GetSeconds ());
-        }
-
+      m = uint32_t (m_ptc * (now - m_idleTime).GetSeconds ());   
       m_idle = 0;
     }
 
   m_qAvg = Estimator (nQueued, m + 1, m_qAvg, m_qW);
 
   NS_LOG_DEBUG ("\t bytesInQueue  " << GetInternalQueue (0)->GetNBytes () << "\tQavg " << m_qAvg);
+  std::cout<<"\t bytesInQueue  " << GetInternalQueue (0)->GetNBytes () << "\tQavg " << m_qAvg;
   NS_LOG_DEBUG ("\t packetsInQueue  " << GetInternalQueue (0)->GetNPackets () << "\tQavg " << m_qAvg);
-
+  std::cout<<"\t packetsInQueue  " << GetInternalQueue (0)->GetNPackets () << "\tQavg " << m_qAvg;
   m_count++;
   m_countBytes += item->GetSize ();
-
+  
   uint32_t dropType = DTYPE_NONE;
-  std::cout << "queue average:" << m_qAvg;
   if (m_qAvg >= m_minTh && nQueued > 1)
-    {
-      m_rnd->SetAttribute ("Min", DoubleValue (0));
-      m_rnd->SetAttribute ("Max", DoubleValue (nQueued));
+    { 
+      NS_LOG_DEBUG ("\ninside > minth");
+      std::cout<<"\ninside > minth\n";
+      m_rnd->SetAttribute ("Min", DoubleValue (1));
+      m_rnd->SetAttribute ("Max", DoubleValue (nQueued-1));
+      NS_LOG_DEBUG ("after min max");
       uint32_t randompos = m_rnd->GetInteger ();
+      NS_LOG_DEBUG ("after randompos  "<< randompos);
       Ptr<Queue<QueueDiscItem> > queue =  GetInternalQueue (0);
       Ptr<DropRandomQueue<QueueDiscItem> > q = queue->GetObject<DropRandomQueue<QueueDiscItem> > ();
+      NS_LOG_DEBUG ("after q");
+      std::cout<<"after q";
       Ptr<QueueDiscItem> randomitem = q->RemoveRandom (randompos);
+      NS_LOG_DEBUG ("after remrandom");
+      std::cout<<"after remrandom";
       int32_t hash = Classify (item);
       int32_t hashrnd = Classify (randomitem);
+      std::cout<<hash<<hashrnd;
+      NS_LOG_DEBUG (hash << hashrnd);
       if (hash == hashrnd)
-        {
+        { 
+          NS_LOG_DEBUG ("inside same");
+          std::cout<<"inside same";
+          m_stats.randomDrop+=2;
           Drop (item);
+          Drop (randomitem);
           return false;
         }
       else
         {
+          NS_LOG_DEBUG ("inside enqrandom");
+          std::cout<<"inside enqrandom";
           q->EnqueueRandom (randompos,randomitem);
         }
       if (m_qAvg >= m_maxTh)
         {
-          std::cout << "above max";
+          std::cout<<"adding dtype forced";
           NS_LOG_DEBUG ("adding DROP FORCED MARK");
           dropType = DTYPE_FORCED;
         }
       else if (m_old == 0)
         {
+          std::cout<<"first time >minth";
           m_count = 1;
           m_countBytes = item->GetSize ();
           m_old = 1;
         }
       else if (DropEarly (item, nQueued))
         {
+          std::cout<<"adding dtype unforced";
           NS_LOG_LOGIC ("DropEarly returns 1");
           dropType = DTYPE_UNFORCED;
         }
@@ -283,24 +289,25 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
       m_vProb = 0.0;
       m_old = 0;
     }
-
+   uint32_t forcedmark=m_stats.forcedMark,unforcedmark=m_stats.unforcedMark;
   if (dropType == DTYPE_UNFORCED)
     {
       if (!m_useEcn || !item->Mark ())
         {
           NS_LOG_DEBUG ("\t Dropping due to Prob Mark " << m_qAvg);
+          std::cout<<"\t Dropping due to Prob Mark "<< m_qAvg;
           m_stats.unforcedDrop++;
           Drop (item);
           return false;
         }
-      NS_LOG_DEBUG ("\t Marking due to Prob Mark " << m_qAvg);
-      m_stats.unforcedMark++;
+      unforcedmark++;      
     }
   else if (dropType == DTYPE_FORCED)
     {
       if (m_useHardDrop || !m_useEcn || !item->Mark ())
         {
           NS_LOG_DEBUG ("\t Dropping due to Hard Mark " << m_qAvg);
+          std::cout<<"\t Dropping due to Hard Mark " << m_qAvg;
           m_stats.forcedDrop++;
           Drop (item);
           if (m_isNs1Compat)
@@ -310,17 +317,23 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
             }
           return false;
         }
-      NS_LOG_DEBUG ("\t Marking due to Hard Mark " << m_qAvg);
-      m_stats.forcedMark++;
+      forcedmark++;
     }
 
   bool retval = GetInternalQueue (0)->Enqueue (item);
 
   if (!retval)
     {
+      std::cout<<"\t drop due to qlim"<<m_qAvg;
       m_stats.qLimDrop++;
     }
-
+  
+  else
+   {   
+     std::cout<<"\t enqueued.. shud chek for mark";
+     m_stats.unforcedMark=unforcedmark;
+     m_stats.forcedMark=forcedmark;
+   }     
   // If Queue::Enqueue fails, QueueDisc::Drop is called by the internal queue
   // because QueueDisc::AddInternalQueue sets the drop callback
 
@@ -335,8 +348,6 @@ ChokeQueueDisc::InitializeParams (void)
 {
   NS_LOG_FUNCTION (this);
   NS_LOG_INFO ("Initializing CHOKe params.");
-
-  m_cautious = 0;
   m_ptc = m_linkBandwidth.GetBitRate () / (8.0 * m_meanPktSize);
   NS_ASSERT (m_minTh <= m_maxTh);
   m_stats.forcedDrop = 0;
@@ -344,12 +355,13 @@ ChokeQueueDisc::InitializeParams (void)
   m_stats.qLimDrop = 0;
   m_stats.forcedMark = 0;
   m_stats.unforcedMark = 0;
+  m_stats.randomDrop = 0;
 
   m_qAvg = 0.0;
   m_count = 0;
   m_countBytes = 0;
   m_old = 0;
-  m_idle = 1;
+  m_idle = true;
 
   double th_diff = (m_maxTh - m_minTh);
   if (th_diff == 0)
@@ -361,45 +373,12 @@ ChokeQueueDisc::InitializeParams (void)
   m_vB = -m_minTh / th_diff;
   m_idleTime = NanoSeconds (0);
 
-/*
- * If m_qW=0, set it to a reasonable value of 1-exp(-1/C)
- * This corresponds to choosing m_qW to be of that value for
- * which the packet time constant -1/ln(1-m)qW) per default RTT
- * of 100ms is an order of magnitude more than the link capacity, C.
- *
- * If m_qW=-1, then the queue weight is set to be a function of
- * the bandwidth and the link propagation delay.  In particular,
- * the default RTT is assumed to be three times the link delay and
- * transmission delay, if this gives a default RTT greater than 100 ms.
- *
- * If m_qW=-2, set it to a reasonable value of 1-exp(-10/C).
- */
-  if (m_qW == 0.0)
-    {
-      m_qW = 1.0 - std::exp (-1.0 / m_ptc);
-    }
-  else if (m_qW == -1.0)
-    {
-      double rtt = 3.0 * (m_linkDelay.GetSeconds () + 1.0 / m_ptc);
-
-      if (rtt < 0.1)
-        {
-          rtt = 0.1;
-        }
-      m_qW = 1.0 - std::exp (-1.0 / (10 * rtt * m_ptc));
-    }
-  else if (m_qW == -2.0)
-    {
-      m_qW = 1.0 - std::exp (-10.0 / m_ptc);
-    }
-
   NS_LOG_DEBUG ("\tm_delay " << m_linkDelay.GetSeconds () << "; m_isWait "
                              << m_isWait << "; m_qW " << m_qW << "; m_ptc " << m_ptc
                              << "; m_minTh " << m_minTh << "; m_maxTh " << m_maxTh
                              << "; th_diff " << th_diff
                              << "; lInterm " << m_lInterm << "; va " << m_vA <<  "; cur_max_p "
-                             << m_curMaxP << "; v_b " << m_vB <<  "; m_vC "
-                             << m_vC << "; m_vD " <<  m_vD);
+                             << m_curMaxP << "; v_b " << m_vB);
 }
 // Compute the average queue size
 double
@@ -417,46 +396,11 @@ uint32_t
 ChokeQueueDisc::DropEarly (Ptr<QueueDiscItem> item, uint32_t qSize)
 {
   NS_LOG_FUNCTION (this << item << qSize);
-  m_vProb1 = CalculatePNew (m_qAvg, m_maxTh, m_vA, m_vB, m_vC, m_vD, m_curMaxP);
+  m_vProb1 = CalculatePNew (m_qAvg, m_maxTh, m_vA, m_vB, m_curMaxP);
   m_vProb = ModifyP (m_vProb1, m_count, m_countBytes, m_meanPktSize, m_isWait, item->GetSize ());
 
   // Drop probability is computed, pick random number and act
-  if (m_cautious == 1)
-    {
-      /*
-       * Don't drop/mark if the instantaneous queue is much below the average.
-       * For experimental purposes only.
-       * pkts: the number of packets arriving in 50 ms
-       */
-      double pkts = m_ptc * 0.05;
-      double fraction = std::pow ((1 - m_qW), pkts);
-
-      if ((double) qSize < fraction * m_qAvg)
-        {
-          // Queue could have been empty for 0.05 seconds
-          return 0;
-        }
-    }
-
   double u = m_uv->GetValue ();
-
-  if (m_cautious == 2)
-    {
-      /*
-       * Decrease the drop probability if the instantaneous
-       * queue is much below the average.
-       * For experimental purposes only.
-       * pkts: the number of packets arriving in 50 ms
-       */
-      double pkts = m_ptc * 0.05;
-      double fraction = std::pow ((1 - m_qW), pkts);
-      double ratio = qSize / (fraction * m_qAvg);
-
-      if (ratio < 1.0)
-        {
-          u *= 1.0 / ratio;
-        }
-    }
 
   if (u <= m_vProb)
     {
@@ -465,8 +409,7 @@ ChokeQueueDisc::DropEarly (Ptr<QueueDiscItem> item, uint32_t qSize)
       // DROP or MARK
       m_count = 0;
       m_countBytes = 0;
-      /// \todo Implement set bit to mark
-
+      
       return 1; // drop
     }
 
@@ -476,9 +419,9 @@ ChokeQueueDisc::DropEarly (Ptr<QueueDiscItem> item, uint32_t qSize)
 // Returns a probability using these function parameters for the DropEarly funtion
 double
 ChokeQueueDisc::CalculatePNew (double qAvg, double maxTh, double vA,
-                               double vB, double vC, double vD, double maxP)
+                               double vB, double maxP)
 {
-  NS_LOG_FUNCTION (this << qAvg << maxTh  << vA << vB << vC << vD << maxP);
+  NS_LOG_FUNCTION (this << qAvg << maxTh  << vA << vB << maxP);
   double p;
 
   if (qAvg >= maxTh)
@@ -583,25 +526,26 @@ Ptr<QueueDiscItem>
 ChokeQueueDisc::DoDequeue (void)
 {
   NS_LOG_FUNCTION (this);
-
+  NS_LOG_DEBUG ("inside deq");
   if (GetInternalQueue (0)->IsEmpty ())
     {
-      NS_LOG_LOGIC ("Queue empty");
-      m_idle = 1;
-      m_idleTime = Simulator::Now ();
-
+      NS_LOG_LOGIC ("Queue empty");   
       return 0;
     }
   else
     {
-      m_idle = 0;
+      m_idle = false;
       Ptr<QueueDiscItem> item = GetInternalQueue (0)->Dequeue ();
 
       NS_LOG_LOGIC ("Popped " << item);
 
       NS_LOG_LOGIC ("Number packets " << GetInternalQueue (0)->GetNPackets ());
       NS_LOG_LOGIC ("Number bytes " << GetInternalQueue (0)->GetNBytes ());
-
+      if (GetInternalQueue (0)->IsEmpty ())
+        {
+           m_idle = true;
+           m_idleTime = Simulator::Now ();
+        }
       return item;
     }
 }
@@ -636,9 +580,17 @@ ChokeQueueDisc::CheckConfig (void)
 
   if (GetNPacketFilters () == 0)
     {
-      NS_LOG_ERROR ("ChokeQueueDisc should have atleast one packet filter");
-      return false;
+      Ptr<FqCoDelIpv4PacketFilter> Ipv4PacketFilter = CreateObject<FqCoDelIpv4PacketFilter> ();
+      Ptr<FqCoDelIpv6PacketFilter> Ipv6PacketFilter = CreateObject<FqCoDelIpv6PacketFilter> ();
+      AddPacketFilter (Ipv4PacketFilter);
+      AddPacketFilter (Ipv6PacketFilter);
     }
+
+  if (GetNPacketFilters () < 1)
+    {   
+    NS_LOG_ERROR ("ChokeQueueDisc should have atleast one packet filter");
+    return false;
+     }
 
   if (GetNInternalQueues () == 0)
     {

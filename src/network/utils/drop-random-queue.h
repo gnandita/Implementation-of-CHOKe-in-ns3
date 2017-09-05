@@ -143,13 +143,13 @@ Ptr<Item>
 DropRandomQueue<Item>::RemoveRandom (uint32_t pos)
 {
   QUEUE_LOG (LOG_LOGIC, "DropRandomQueue:RemoveRandom(" << this << ")");
-
+  
   auto ptr = Head ();
   for (uint32_t i = 0; i < pos; i++)
     {
       ptr++;
     }
-  Ptr<Item> item = DoRemove (ptr);
+  Ptr<Item> item = DoDequeue (ptr);
 
   QUEUE_LOG (LOG_LOGIC, "Removed " << item);
 

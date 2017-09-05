@@ -1,6 +1,6 @@
-/* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
+//* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright  2011 Marcos Talau
+ * Copyright (c) 2017 NITK Surathkal
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -15,39 +15,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Author: Marcos Talau (talau@users.sourceforge.net)
+ * Authors: Nandita G <gm.nandita@gmail.com>
+ *          Mohit P. Tahiliani <tahiliani@nitk.edu.in>
  *
- *
- *
- * This file incorporates work covered by the following copyright and
- * permission notice:
- *
- * Copyright (c) 1990-1997 Regents of the University of California.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the University nor of the Laboratory may be used
- *    to endorse or promote products derived from this software without
- *    specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
  */
 
 
@@ -88,22 +58,24 @@ public:
    * \brief Destructor
    *
    * Destructor
-   */
+   */ 
   virtual ~ChokeQueueDisc ();
 
   /**
    * \brief Stats
    */
   typedef struct
-  {
+  {   
     uint32_t unforcedDrop;  //!< Early probability drops
     uint32_t forcedDrop;    //!< Forced drops, qavg > max threshold
     uint32_t qLimDrop;      //!< Drops due to queue limits
     uint32_t unforcedMark;  //!< Early probability marks
-    uint32_t forcedMark;    //!< Forced marks, qavg > max threshold
+    uint32_t forcedMark;  
+    uint32_t randomDrop;
+  //!< Forced marks, qavg > max threshold
   } Stats;
 
-  /**
+  /** 
    * \brief Drop types
    */
   enum
@@ -143,7 +115,7 @@ public:
    * \returns The queue size in bytes or packets.
    */
   uint32_t GetQueueSize (void);
-
+  
   /**
    * \brief Set the limit of the queue.
    *
@@ -166,14 +138,14 @@ public:
    */
   Stats GetStats ();
 
-  /**
-   * Assign a fixed random variable stream number to the random variables
-   * used by this model.  Return the number of streams (possibly zero) that
-   * have been assigned.
-   *
-   * \param stream first stream index to use
-   * \return the number of stream indices assigned by this model
-   */
+ /**
+  * Assign a fixed random variable stream number to the random variables
+  * used by this model.  Return the number of streams (possibly zero) that
+  * have been assigned.
+  *
+  * \param stream first stream index to use
+  * \return the number of stream indices assigned by this model
+  */
   int64_t AssignStreams (int64_t stream);
   int64_t AssignStreamsRnd (int64_t stream);
 protected:
@@ -220,13 +192,11 @@ private:
    * \param gentle "gentle" algorithm
    * \param vA vA
    * \param vB vB
-   * \param vC vC
-   * \param vD vD
    * \param maxP max_p
    * \returns Prob. of packet drop before "count"
    */
-  double CalculatePNew (double qAvg, double, double vA,
-                        double vB, double vC, double vD, double maxP);
+  double CalculatePNew (double qAvg, double , double vA,
+                        double vB, double maxP);
   /**
    * \brief Returns a probability using these function parameters for the DropEarly function
    * \param p Prob. of packet drop before "count"
@@ -245,7 +215,6 @@ private:
   // ** Variables supplied by user
   QueueDiscMode m_mode;     //!< Mode (Bytes or packets)
   uint32_t m_meanPktSize;   //!< Avg pkt size
-  uint32_t m_idlePktSize;   //!< Avg pkt size used during idle times
   bool m_isWait;            //!< True for waiting between dropped packets
   double m_minTh;           //!< Min avg length threshold (bytes)
   double m_maxTh;           //!< Max avg length threshold (bytes), should be >= 2*minTh
@@ -262,17 +231,14 @@ private:
   double m_vProb1;          //!< Prob. of packet drop before "count"
   double m_vA;              //!< 1.0 / (m_maxTh - m_minTh)
   double m_vB;              //!< -m_minTh / (m_maxTh - m_minTh)
-  double m_vC;              //!< (1.0 - m_curMaxP) / m_maxTh - used in "gentle" mode
-  double m_vD;              //!< 2.0 * m_curMaxP - 1.0 - used in "gentle" mode
   double m_curMaxP;         //!< Current max_p
   double m_vProb;           //!< Prob. of packet drop
   uint32_t m_countBytes;    //!< Number of bytes since last drop
   uint32_t m_old;           //!< 0 when average queue first exceeds threshold
-  uint32_t m_idle;          //!< 0/1 idle status
+  bool m_idle;          //!< 0/1 idle status
   double m_ptc;             //!< packet time constant in packets/second
   double m_qAvg;            //!< Average queue length
   uint32_t m_count;         //!< Number of packets since last random number generation
-  uint32_t m_cautious;
   Time m_idleTime;          //!< Start of current idle period
 
   Ptr<UniformRandomVariable> m_uv;  //!< rng stream
