@@ -20,8 +20,6 @@
 
 namespace ns3 {
 
-NS_LOG_COMPONENT_DEFINE ("DropRandomQueue");
-
 NS_OBJECT_TEMPLATE_CLASS_DEFINE (DropRandomQueue,Packet);
 
 } // namespace ns3

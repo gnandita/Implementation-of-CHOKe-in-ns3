@@ -28,11 +28,8 @@
 #include "ns3/abort.h"
 #include "choke-queue-disc.h"
 #include "ns3/drop-random-queue.h"
-<<<<<<< HEAD
 #include "ns3/ipv4-packet-filter.h"
 #include "ns3/ipv6-packet-filter.h"
-=======
->>>>>>> 95a7391e8d60250baa83dfe94aee406f0e77e56c
 
 namespace ns3 {
 
@@ -213,12 +210,12 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
   // simulate number of packets arrival during idle period
   uint32_t m = 0;
 
-  if (m_idle == 1)
+  if (m_idle == true)
     {
       NS_LOG_DEBUG ("CHOKe Queue Disc is idle.");
       Time now = Simulator::Now ();
       m = uint32_t (m_ptc * (now - m_idleTime).GetSeconds ());   
-      m_idle = 0;
+      m_idle = false;
     }
 
   m_qAvg = Estimator (nQueued, m + 1, m_qAvg, m_qW);
@@ -229,7 +226,6 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
   std::cout<<"\t packetsInQueue  " << GetInternalQueue (0)->GetNPackets () << "\tQavg " << m_qAvg;
   m_count++;
   m_countBytes += item->GetSize ();
-<<<<<<< HEAD
   
   uint32_t dropType = DTYPE_NONE;
   if (m_qAvg >= m_minTh && nQueued > 1)
@@ -259,33 +255,12 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
           m_stats.randomDrop+=2;
           Drop (item);
           Drop (randomitem);
-=======
-
-  uint32_t dropType = DTYPE_NONE;
-  if (m_qAvg >= m_minTh && nQueued > 1)
-    {
-      m_rnd->SetAttribute ("Min", DoubleValue (0));
-      m_rnd->SetAttribute ("Max", DoubleValue (nQueued));
-      uint32_t randompos = m_rnd->GetInteger ();
-      Ptr<Queue<QueueDiscItem> > queue =  GetInternalQueue (0);
-      Ptr<DropRandomQueue<QueueDiscItem> > q = queue->GetObject<DropRandomQueue<QueueDiscItem> > ();
-      Ptr<QueueDiscItem> randomitem = q->RemoveRandom (randompos);
-      int32_t hash = Classify (item);
-      int32_t hashrnd = Classify (randomitem);
-      if (hash == hashrnd)
-        { 
-          m_stats.randomDrop++;
-          Drop (item);
->>>>>>> 95a7391e8d60250baa83dfe94aee406f0e77e56c
           return false;
         }
       else
         {
-<<<<<<< HEAD
           NS_LOG_DEBUG ("inside enqrandom");
           std::cout<<"inside enqrandom";
-=======
->>>>>>> 95a7391e8d60250baa83dfe94aee406f0e77e56c
           q->EnqueueRandom (randompos,randomitem);
         }
       if (m_qAvg >= m_maxTh)
@@ -296,10 +271,7 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
         }
       else if (m_old == 0)
         {
-<<<<<<< HEAD
           std::cout<<"first time >minth";
-=======
->>>>>>> 95a7391e8d60250baa83dfe94aee406f0e77e56c
           m_count = 1;
           m_countBytes = item->GetSize ();
           m_old = 1;
@@ -401,41 +373,6 @@ ChokeQueueDisc::InitializeParams (void)
   m_vB = -m_minTh / th_diff;
   m_idleTime = NanoSeconds (0);
 
-<<<<<<< HEAD
-=======
-/*
- * If m_qW=0, set it to a reasonable value of 1-exp(-1/C)
- * This corresponds to choosing m_qW to be of that value for
- * which the packet time constant -1/ln(1-m)qW) per default RTT
- * of 100ms is an order of magnitude more than the link capacity, C.
- *
- * If m_qW=-1, then the queue weight is set to be a function of
- * the bandwidth and the link propagation delay.  In particular,
- * the default RTT is assumed to be three times the link delay and
- * transmission delay, if this gives a default RTT greater than 100 ms.
- *
- * If m_qW=-2, set it to a reasonable value of 1-exp(-10/C).
- */
-  if (m_qW == 0.0)
-    {
-      m_qW = 1.0 - std::exp (-1.0 / m_ptc);
-    }
-  else if (m_qW == -1.0)
-    {
-      double rtt = 3.0 * (m_linkDelay.GetSeconds () + 1.0 / m_ptc);
-
-      if (rtt < 0.1)
-        {
-          rtt = 0.1;
-        }
-      m_qW = 1.0 - std::exp (-1.0 / (10 * rtt * m_ptc));
-    }
-  else if (m_qW == -2.0)
-    {
-      m_qW = 1.0 - std::exp (-10.0 / m_ptc);
-    }
-
->>>>>>> 95a7391e8d60250baa83dfe94aee406f0e77e56c
   NS_LOG_DEBUG ("\tm_delay " << m_linkDelay.GetSeconds () << "; m_isWait "
                              << m_isWait << "; m_qW " << m_qW << "; m_ptc " << m_ptc
                              << "; m_minTh " << m_minTh << "; m_maxTh " << m_maxTh
@@ -482,11 +419,7 @@ ChokeQueueDisc::DropEarly (Ptr<QueueDiscItem> item, uint32_t qSize)
 // Returns a probability using these function parameters for the DropEarly funtion
 double
 ChokeQueueDisc::CalculatePNew (double qAvg, double maxTh, double vA,
-<<<<<<< HEAD
                                double vB, double maxP)
-=======
-                               double vB, double vC, double vD, double maxP)
->>>>>>> 95a7391e8d60250baa83dfe94aee406f0e77e56c
 {
   NS_LOG_FUNCTION (this << qAvg << maxTh  << vA << vB << maxP);
   double p;
@@ -647,15 +580,10 @@ ChokeQueueDisc::CheckConfig (void)
 
   if (GetNPacketFilters () == 0)
     {
-<<<<<<< HEAD
       Ptr<FqCoDelIpv4PacketFilter> Ipv4PacketFilter = CreateObject<FqCoDelIpv4PacketFilter> ();
       Ptr<FqCoDelIpv6PacketFilter> Ipv6PacketFilter = CreateObject<FqCoDelIpv6PacketFilter> ();
       AddPacketFilter (Ipv4PacketFilter);
       AddPacketFilter (Ipv6PacketFilter);
-=======
-      NS_LOG_ERROR ("ChokeQueueDisc should have atleast one packet filter");
-      return false;
->>>>>>> 95a7391e8d60250baa83dfe94aee406f0e77e56c
     }
 
   if (GetNPacketFilters () < 1)
