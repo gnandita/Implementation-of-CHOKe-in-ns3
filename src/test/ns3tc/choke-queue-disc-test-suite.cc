@@ -104,7 +104,7 @@ private:
 };
 
 ChokeQueueDiscResponseToPassiveAndAggressiveFlows::ChokeQueueDiscResponseToPassiveAndAggressiveFlows ()
-  : TestCase ("Compare response to passive flows and aggressive flows")
+  : TestCase ("Test IP flows separation and packet limit")
 {
 }
 
@@ -124,7 +124,7 @@ ChokeQueueDiscResponseToPassiveAndAggressiveFlows::AddPacket (Ptr<ChokeQueueDisc
 void
 ChokeQueueDiscResponseToPassiveAndAggressiveFlows::DoRun (void)
 {
-  Ptr<ChokeQueueDisc> queueDisc = CreateObject<ChokeQueueDisc> ();  
+  Ptr<ChokeQueueDisc> queueDisc = CreateObject<ChokeQueueDisc> ();
   Ptr<FqCoDelIpv4PacketFilter> Ipv4PacketFilter = CreateObject<FqCoDelIpv4PacketFilter> ();
   Ptr<FqCoDelIpv6PacketFilter> Ipv6PacketFilter = CreateObject<FqCoDelIpv6PacketFilter> ();
   queueDisc->AddPacketFilter (Ipv4PacketFilter);
@@ -143,14 +143,14 @@ ChokeQueueDiscResponseToPassiveAndAggressiveFlows::DoRun (void)
   hdr.SetDestination (Ipv4Address ("10.10.1.2"));
   hdr.SetProtocol (7);
 
-  for(uint32_t i=0;i<300;i++)
-  {
-  AddPacket (queueDisc, hdr);
-  }
+  for (uint32_t i = 0; i < 300; i++)
+    {
+      AddPacket (queueDisc, hdr);
+    }
   ChokeQueueDisc::Stats st = StaticCast<ChokeQueueDisc> (queueDisc)->GetStats ();
-  int32_t test1 = st.unforcedDrop + st.forcedDrop + st.qLimDrop + st.randomDrop; 
+  int32_t test1 = st.unforcedDrop + st.forcedDrop + st.qLimDrop + st.randomDrop;
 
-  queueDisc = CreateObject<ChokeQueueDisc> (); 
+  queueDisc = CreateObject<ChokeQueueDisc> ();
   queueDisc->AddPacketFilter (Ipv4PacketFilter);
   queueDisc->AddPacketFilter (Ipv6PacketFilter);
   NS_TEST_EXPECT_MSG_EQ (queueDisc->SetAttributeFailSafe ("MinTh", DoubleValue (70)), true,
@@ -185,12 +185,12 @@ ChokeQueueDiscResponseToPassiveAndAggressiveFlows::DoRun (void)
   hdr4.SetDestination (Ipv4Address ("10.10.1.4"));
   hdr4.SetProtocol (7);
 
-  for (uint32_t j=0;j<75;j++)
+  for (uint32_t j = 0; j < 75; j++)
     {
       AddPacket (queueDisc, hdr1);
-      AddPacket (queueDisc, hdr2);     
+      AddPacket (queueDisc, hdr2);
       AddPacket (queueDisc, hdr3);
-      AddPacket (queueDisc, hdr4);      
+      AddPacket (queueDisc, hdr4);
     }
   ChokeQueueDisc::Stats st1 = StaticCast<ChokeQueueDisc> (queueDisc)->GetStats ();
   int32_t test2 = st1.unforcedDrop + st1.forcedDrop + st1.qLimDrop + st1.randomDrop;

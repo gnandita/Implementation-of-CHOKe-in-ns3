@@ -190,7 +190,7 @@ ChokeQueueDisc::AssignStreamsRnd (int64_t stream)
 }
 bool
 ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
-{ 
+{
   NS_LOG_FUNCTION (this << item);
 
   uint32_t nQueued = 0;
@@ -204,8 +204,7 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
     {
       NS_LOG_DEBUG ("Enqueue in packets mode\n");
       nQueued = GetInternalQueue (0)->GetNPackets ();
-      std::cout<< "nQueued "<<nQueued;
-     }
+    }
 
   // simulate number of packets arrival during idle period
   uint32_t m = 0;
@@ -214,71 +213,53 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
     {
       NS_LOG_DEBUG ("CHOKe Queue Disc is idle.");
       Time now = Simulator::Now ();
-      m = uint32_t (m_ptc * (now - m_idleTime).GetSeconds ());   
+      m = uint32_t (m_ptc * (now - m_idleTime).GetSeconds ());
       m_idle = false;
     }
 
   m_qAvg = Estimator (nQueued, m + 1, m_qAvg, m_qW);
 
   NS_LOG_DEBUG ("\t bytesInQueue  " << GetInternalQueue (0)->GetNBytes () << "\tQavg " << m_qAvg);
-  std::cout<<"\t bytesInQueue  " << GetInternalQueue (0)->GetNBytes () << "\tQavg " << m_qAvg;
   NS_LOG_DEBUG ("\t packetsInQueue  " << GetInternalQueue (0)->GetNPackets () << "\tQavg " << m_qAvg);
-  std::cout<<"\t packetsInQueue  " << GetInternalQueue (0)->GetNPackets () << "\tQavg " << m_qAvg;
   m_count++;
   m_countBytes += item->GetSize ();
-  
+
   uint32_t dropType = DTYPE_NONE;
   if (m_qAvg >= m_minTh && nQueued > 1)
-    { 
-      NS_LOG_DEBUG ("\ninside > minth");
-      std::cout<<"\ninside > minth\n";
+    {
       m_rnd->SetAttribute ("Min", DoubleValue (1));
-      m_rnd->SetAttribute ("Max", DoubleValue (nQueued-1));
-      NS_LOG_DEBUG ("after min max");
+      m_rnd->SetAttribute ("Max", DoubleValue (nQueued - 1));
       uint32_t randompos = m_rnd->GetInteger ();
-      NS_LOG_DEBUG ("after randompos  "<< randompos);
       Ptr<Queue<QueueDiscItem> > queue =  GetInternalQueue (0);
       Ptr<DropRandomQueue<QueueDiscItem> > q = queue->GetObject<DropRandomQueue<QueueDiscItem> > ();
-      NS_LOG_DEBUG ("after q");
-      std::cout<<"after q";
       Ptr<QueueDiscItem> randomitem = q->RemoveRandom (randompos);
-      NS_LOG_DEBUG ("after remrandom");
-      std::cout<<"after remrandom";
       int32_t hash = Classify (item);
       int32_t hashrnd = Classify (randomitem);
-      std::cout<<hash<<hashrnd;
-      NS_LOG_DEBUG (hash << hashrnd);
       if (hash == hashrnd)
-        { 
-          NS_LOG_DEBUG ("inside same");
-          std::cout<<"inside same";
-          m_stats.randomDrop+=2;
+        {
+          m_stats.randomDrop += 2;
+          NS_LOG_DEBUG ("Dropping both packets");
           Drop (item);
           Drop (randomitem);
           return false;
         }
       else
         {
-          NS_LOG_DEBUG ("inside enqrandom");
-          std::cout<<"inside enqrandom";
           q->EnqueueRandom (randompos,randomitem);
         }
       if (m_qAvg >= m_maxTh)
         {
-          std::cout<<"adding dtype forced";
           NS_LOG_DEBUG ("adding DROP FORCED MARK");
           dropType = DTYPE_FORCED;
         }
       else if (m_old == 0)
         {
-          std::cout<<"first time >minth";
           m_count = 1;
           m_countBytes = item->GetSize ();
           m_old = 1;
         }
       else if (DropEarly (item, nQueued))
         {
-          std::cout<<"adding dtype unforced";
           NS_LOG_LOGIC ("DropEarly returns 1");
           dropType = DTYPE_UNFORCED;
         }
@@ -289,25 +270,23 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
       m_vProb = 0.0;
       m_old = 0;
     }
-   uint32_t forcedmark=m_stats.forcedMark,unforcedmark=m_stats.unforcedMark;
+  uint32_t forcedmark = m_stats.forcedMark,unforcedmark = m_stats.unforcedMark;
   if (dropType == DTYPE_UNFORCED)
     {
       if (!m_useEcn || !item->Mark ())
         {
           NS_LOG_DEBUG ("\t Dropping due to Prob Mark " << m_qAvg);
-          std::cout<<"\t Dropping due to Prob Mark "<< m_qAvg;
           m_stats.unforcedDrop++;
           Drop (item);
           return false;
         }
-      unforcedmark++;      
+      unforcedmark++;
     }
   else if (dropType == DTYPE_FORCED)
     {
       if (m_useHardDrop || !m_useEcn || !item->Mark ())
         {
           NS_LOG_DEBUG ("\t Dropping due to Hard Mark " << m_qAvg);
-          std::cout<<"\t Dropping due to Hard Mark " << m_qAvg;
           m_stats.forcedDrop++;
           Drop (item);
           if (m_isNs1Compat)
@@ -324,16 +303,14 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
 
   if (!retval)
     {
-      std::cout<<"\t drop due to qlim"<<m_qAvg;
       m_stats.qLimDrop++;
     }
-  
+
   else
-   {   
-     std::cout<<"\t enqueued.. shud chek for mark";
-     m_stats.unforcedMark=unforcedmark;
-     m_stats.forcedMark=forcedmark;
-   }     
+    {
+      m_stats.unforcedMark = unforcedmark;
+      m_stats.forcedMark = forcedmark;
+    }
   // If Queue::Enqueue fails, QueueDisc::Drop is called by the internal queue
   // because QueueDisc::AddInternalQueue sets the drop callback
 
@@ -409,7 +386,7 @@ ChokeQueueDisc::DropEarly (Ptr<QueueDiscItem> item, uint32_t qSize)
       // DROP or MARK
       m_count = 0;
       m_countBytes = 0;
-      
+
       return 1; // drop
     }
 
@@ -529,7 +506,7 @@ ChokeQueueDisc::DoDequeue (void)
   NS_LOG_DEBUG ("inside deq");
   if (GetInternalQueue (0)->IsEmpty ())
     {
-      NS_LOG_LOGIC ("Queue empty");   
+      NS_LOG_LOGIC ("Queue empty");
       return 0;
     }
   else
@@ -543,8 +520,8 @@ ChokeQueueDisc::DoDequeue (void)
       NS_LOG_LOGIC ("Number bytes " << GetInternalQueue (0)->GetNBytes ());
       if (GetInternalQueue (0)->IsEmpty ())
         {
-           m_idle = true;
-           m_idleTime = Simulator::Now ();
+          m_idle = true;
+          m_idleTime = Simulator::Now ();
         }
       return item;
     }
@@ -578,19 +555,11 @@ ChokeQueueDisc::CheckConfig (void)
       return false;
     }
 
-  if (GetNPacketFilters () == 0)
-    {
-      Ptr<FqCoDelIpv4PacketFilter> Ipv4PacketFilter = CreateObject<FqCoDelIpv4PacketFilter> ();
-      Ptr<FqCoDelIpv6PacketFilter> Ipv6PacketFilter = CreateObject<FqCoDelIpv6PacketFilter> ();
-      AddPacketFilter (Ipv4PacketFilter);
-      AddPacketFilter (Ipv6PacketFilter);
-    }
-
   if (GetNPacketFilters () < 1)
-    {   
-    NS_LOG_ERROR ("ChokeQueueDisc should have atleast one packet filter");
-    return false;
-     }
+    {
+      NS_LOG_ERROR ("ChokeQueueDisc should have atleast one packet filter");
+      return false;
+    }
 
   if (GetNInternalQueues () == 0)
     {
