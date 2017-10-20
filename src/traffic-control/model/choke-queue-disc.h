@@ -147,7 +147,6 @@ public:
    * \return the number of stream indices assigned by this model
    */
   int64_t AssignStreams (int64_t stream);
-  int64_t AssignStreamsRnd (int64_t stream);
 protected:
   /**
    * \brief Dispose of the object

@@ -178,16 +178,10 @@ ChokeQueueDisc::AssignStreams (int64_t stream)
 {
   NS_LOG_FUNCTION (this << stream);
   m_uv->SetStream (stream);
+  m_rnd->SetStream (stream + 1);
   return 1;
 }
 
-int64_t
-ChokeQueueDisc::AssignStreamsRnd (int64_t stream)
-{
-  NS_LOG_FUNCTION (this << stream);
-  m_rnd->SetStream (stream);
-  return 1;
-}
 bool
 ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
 {
