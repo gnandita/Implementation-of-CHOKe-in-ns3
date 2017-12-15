@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef DROPRANDOM_H
-#define DROPRANDOM_H
+#ifndef DROPFROM_H
+#define DROPFROM_H
 
 #include "ns3/queue.h"
 
@@ -30,10 +30,10 @@ namespace ns3 {
 /**
  * \ingroup queue
  *
- * \brief A FIFO packet queue that drops packets randomly on overflow
+ * \brief A FIFO packet queue that drops packets from a position in queue
  */
 template <typename Item>
-class DropRandomQueue : public Queue<Item>
+class DropFromQueue : public Queue<Item>
 {
 public:
   /**
@@ -42,18 +42,18 @@ public:
    */
   static TypeId GetTypeId (void);
   /**
-   * \brief DropRandomQueue Constructor
+   * \brief DropFromQueue Constructor
    *
-   * Creates a droprandom queue with a maximum size of 100 packets by default
+   * Creates a dropfrom queue with a maximum size of 100 packets by default
    */
-  DropRandomQueue ();
-  virtual ~DropRandomQueue ();
+  DropFromQueue ();
+  virtual ~DropFromQueue ();
   virtual bool Enqueue (Ptr<Item> item);
   virtual Ptr<Item> Dequeue (void);
   virtual Ptr<Item> Remove (void);
   virtual Ptr<const Item> Peek (void) const;
-  Ptr<Item> RemoveRandom (uint32_t);
-  bool EnqueueRandom (uint32_t,Ptr<Item> item);
+  Ptr<Item> RemoveFrom (uint32_t);
+  bool EnqueueAt (uint32_t,Ptr<Item> item);
 
 private:
   using Queue<Item>::Head;
@@ -71,43 +71,43 @@ private:
 
 template <typename Item>
 TypeId
-DropRandomQueue<Item>::GetTypeId (void)
+DropFromQueue<Item>::GetTypeId (void)
 {
-  static TypeId tid = TypeId (("ns3::DropRandomQueue<" + GetTypeParamName<DropRandomQueue<Item> > () + ">").c_str ())
+  static TypeId tid = TypeId (("ns3::DropFromQueue<" + GetTypeParamName<DropFromQueue<Item> > () + ">").c_str ())
     .SetParent<Queue<Item> > ()
     .SetGroupName ("Network")
-    .template AddConstructor<DropRandomQueue<Item> > ()
+    .template AddConstructor<DropFromQueue<Item> > ()
   ;
   return tid;
 }
 
 template <typename Item>
-DropRandomQueue<Item>::DropRandomQueue ()
+DropFromQueue<Item>::DropFromQueue ()
   : Queue<Item> ()
 {
-  QUEUE_LOG (LOG_LOGIC, "DropRandomQueue(" << this << ")");
+  QUEUE_LOG (LOG_LOGIC, "DropFromQueue(" << this << ")");
 }
 
 template <typename Item>
-DropRandomQueue<Item>::~DropRandomQueue ()
+DropFromQueue<Item>::~DropFromQueue ()
 {
-  QUEUE_LOG (LOG_LOGIC, "~DropRandomQueue(" << this << ")");
+  QUEUE_LOG (LOG_LOGIC, "~DropFromQueue(" << this << ")");
 }
 
 template <typename Item>
 bool
-DropRandomQueue<Item>::Enqueue (Ptr<Item> item)
+DropFromQueue<Item>::Enqueue (Ptr<Item> item)
 {
-  QUEUE_LOG (LOG_LOGIC, "DropRandomQueue:Enqueue(" << this << ", " << item << ")");
+  QUEUE_LOG (LOG_LOGIC, "DropFromQueue:Enqueue(" << this << ", " << item << ")");
 
   return DoEnqueue (Tail (), item);
 }
 
 template <typename Item>
 Ptr<Item>
-DropRandomQueue<Item>::Dequeue (void)
+DropFromQueue<Item>::Dequeue (void)
 {
-  QUEUE_LOG (LOG_LOGIC, "DropRandomQueue:Dequeue(" << this << ")");
+  QUEUE_LOG (LOG_LOGIC, "DropFromQueue:Dequeue(" << this << ")");
 
   Ptr<Item> item = DoDequeue (Head ());
 
@@ -118,9 +118,9 @@ DropRandomQueue<Item>::Dequeue (void)
 
 template <typename Item>
 Ptr<Item>
-DropRandomQueue<Item>::Remove (void)
+DropFromQueue<Item>::Remove (void)
 {
-  QUEUE_LOG (LOG_LOGIC, "DropRandomQueue:Remove(" << this << ")");
+  QUEUE_LOG (LOG_LOGIC, "DropFromQueue:Remove(" << this << ")");
 
   Ptr<Item> item = DoRemove (Head ());
 
@@ -131,18 +131,18 @@ DropRandomQueue<Item>::Remove (void)
 
 template <typename Item>
 Ptr<const Item>
-DropRandomQueue<Item>::Peek (void) const
+DropFromQueue<Item>::Peek (void) const
 {
-  QUEUE_LOG (LOG_LOGIC, "DropRandomQueue:Peek(" << this << ")");
+  QUEUE_LOG (LOG_LOGIC, "DropFromQueue:Peek(" << this << ")");
 
   return DoPeek (Head ());
 }
 
 template <typename Item>
 Ptr<Item>
-DropRandomQueue<Item>::RemoveRandom (uint32_t pos)
+DropFromQueue<Item>::RemoveFrom (uint32_t pos)
 {
-  QUEUE_LOG (LOG_LOGIC, "DropRandomQueue:RemoveRandom(" << this << ")");
+  QUEUE_LOG (LOG_LOGIC, "DropFromQueue:RemoveFrom(" << this << ")");
 
   auto ptr = Head ();
   for (uint32_t i = 0; i < pos; i++)
@@ -158,9 +158,9 @@ DropRandomQueue<Item>::RemoveRandom (uint32_t pos)
 
 template <typename Item>
 bool
-DropRandomQueue<Item>::EnqueueRandom (uint32_t pos,Ptr<Item> item)
+DropFromQueue<Item>::EnqueueAt (uint32_t pos,Ptr<Item> item)
 {
-  QUEUE_LOG (LOG_LOGIC, "DropRandomQueue:EnqueueRandom(" << this << ")");
+  QUEUE_LOG (LOG_LOGIC, "DropFromQueue:EnqueueAt(" << this << ")");
 
   auto ptr = Head ();
   for (uint32_t i = 1; i < pos; i++)
@@ -173,4 +173,4 @@ DropRandomQueue<Item>::EnqueueRandom (uint32_t pos,Ptr<Item> item)
 
 } // namespace ns3
 
-#endif /* DROPRandom_H */
+#endif /* DROPFROM_H */

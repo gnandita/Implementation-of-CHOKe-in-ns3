@@ -27,7 +27,7 @@
 #include "ns3/simulator.h"
 #include "ns3/abort.h"
 #include "choke-queue-disc.h"
-#include "ns3/drop-random-queue.h"
+#include "ns3/drop-from-queue.h"
 #include "ns3/ipv4-packet-filter.h"
 #include "ns3/ipv6-packet-filter.h"
 
@@ -225,8 +225,8 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
       m_rnd->SetAttribute ("Max", DoubleValue (nQueued - 1));
       uint32_t randompos = m_rnd->GetInteger ();
       Ptr<Queue<QueueDiscItem> > queue =  GetInternalQueue (0);
-      Ptr<DropRandomQueue<QueueDiscItem> > q = queue->GetObject<DropRandomQueue<QueueDiscItem> > ();
-      Ptr<QueueDiscItem> randomitem = q->RemoveRandom (randompos);
+      Ptr<DropFromQueue<QueueDiscItem> > q = queue->GetObject<DropFromQueue<QueueDiscItem> > ();
+      Ptr<QueueDiscItem> randomitem = q->RemoveFrom (randompos);
       int32_t hash = Classify (item);
       int32_t hashrnd = Classify (randomitem);
       if (hash == hashrnd)
@@ -239,7 +239,7 @@ ChokeQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
         }
       else
         {
-          q->EnqueueRandom (randompos,randomitem);
+          q->EnqueueAt (randompos,randomitem);
         }
       if (m_qAvg >= m_maxTh)
         {
@@ -557,8 +557,8 @@ ChokeQueueDisc::CheckConfig (void)
 
   if (GetNInternalQueues () == 0)
     {
-      // create a DropRandom queue
-      Ptr<InternalQueue> queue = CreateObjectWithAttributes<DropRandomQueue<QueueDiscItem> > ("Mode", EnumValue (m_mode));
+      // create a DropFrom queue
+      Ptr<InternalQueue> queue = CreateObjectWithAttributes<DropFromQueue<QueueDiscItem> > ("Mode", EnumValue (m_mode));
       if (m_mode == QUEUE_DISC_MODE_PACKETS)
         {
           queue->SetMaxPackets (m_queueLimit);

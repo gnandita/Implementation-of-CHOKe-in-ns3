@@ -16,10 +16,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "drop-random-queue.h"
+#include "drop-from-queue.h"
 
 namespace ns3 {
 
-NS_OBJECT_TEMPLATE_CLASS_DEFINE (DropRandomQueue,Packet);
+NS_OBJECT_TEMPLATE_CLASS_DEFINE (DropFromQueue,Packet);
 
 } // namespace ns3
