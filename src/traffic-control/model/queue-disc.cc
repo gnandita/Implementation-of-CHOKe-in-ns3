@@ -34,6 +34,7 @@ namespace ns3 {
 
 NS_OBJECT_TEMPLATE_CLASS_DEFINE (Queue,QueueDiscItem);
 NS_OBJECT_TEMPLATE_CLASS_DEFINE (DropTailQueue,QueueDiscItem);
+NS_OBJECT_TEMPLATE_CLASS_DEFINE (DropFromQueue,QueueDiscItem);
 
 NS_LOG_COMPONENT_DEFINE ("QueueDisc");
 
