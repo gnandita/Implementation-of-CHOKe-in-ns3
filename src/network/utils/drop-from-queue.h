@@ -52,8 +52,8 @@ public:
   virtual Ptr<Item> Dequeue (void);
   virtual Ptr<Item> Remove (void);
   virtual Ptr<const Item> Peek (void) const;
-  virtual Ptr<const Item> PeekAt (uint32_t) const;
-  virtual bool EnqueueAt (uint32_t,Ptr<Item> item);
+  Ptr<Item> RemoveFrom (uint32_t);
+  bool EnqueueAt (uint32_t,Ptr<Item> item);
 
 private:
   using Queue<Item>::Head;
@@ -85,19 +85,21 @@ template <typename Item>
 DropFromQueue<Item>::DropFromQueue ()
   : Queue<Item> ()
 {
-
+  QUEUE_LOG (LOG_LOGIC, "DropFromQueue(" << this << ")");
 }
 
 template <typename Item>
 DropFromQueue<Item>::~DropFromQueue ()
 {
-
+  QUEUE_LOG (LOG_LOGIC, "~DropFromQueue(" << this << ")");
 }
 
 template <typename Item>
 bool
 DropFromQueue<Item>::Enqueue (Ptr<Item> item)
 {
+  QUEUE_LOG (LOG_LOGIC, "DropFromQueue:Enqueue(" << this << ", " << item << ")");
+
   return DoEnqueue (Tail (), item);
 }
 
@@ -105,8 +107,11 @@ template <typename Item>
 Ptr<Item>
 DropFromQueue<Item>::Dequeue (void)
 {
+  QUEUE_LOG (LOG_LOGIC, "DropFromQueue:Dequeue(" << this << ")");
 
   Ptr<Item> item = DoDequeue (Head ());
+
+  QUEUE_LOG (LOG_LOGIC, "Popped " << item);
 
   return item;
 }
@@ -115,8 +120,11 @@ template <typename Item>
 Ptr<Item>
 DropFromQueue<Item>::Remove (void)
 {
+  QUEUE_LOG (LOG_LOGIC, "DropFromQueue:Remove(" << this << ")");
 
   Ptr<Item> item = DoRemove (Head ());
+
+  QUEUE_LOG (LOG_LOGIC, "Removed " << item);
 
   return item;
 }
@@ -125,37 +133,43 @@ template <typename Item>
 Ptr<const Item>
 DropFromQueue<Item>::Peek (void) const
 {
+  QUEUE_LOG (LOG_LOGIC, "DropFromQueue:Peek(" << this << ")");
+
   return DoPeek (Head ());
 }
 
 template <typename Item>
-Ptr<const Item>
-DropFromQueue<Item>::PeekAt (uint32_t pos) const
+Ptr<Item>
+DropFromQueue<Item>::RemoveFrom (uint32_t pos)
 {
-  auto ptr = Head ();
+  QUEUE_LOG (LOG_LOGIC, "DropFromQueue:RemoveFrom(" << this << ")");
 
+  auto ptr = Head ();
   for (uint32_t i = 0; i < pos; i++)
     {
       ptr++;
     }
+  Ptr<Item> item = DoDequeue (ptr);
 
-  Ptr<const Item> item = DoPeek (ptr);
+  QUEUE_LOG (LOG_LOGIC, "Removed " << item);
 
   return item;
 }
 
+
+
+
 template <typename Item>
 bool
-DropFromQueue<Item>::EnqueueAt (uint32_t pos, Ptr<Item> item)
+DropFromQueue<Item>::EnqueueAt (uint32_t pos,Ptr<Item> item)
 {
+  QUEUE_LOG (LOG_LOGIC, "DropFromQueue:EnqueueAt(" << this << ")");
 
   auto ptr = Head ();
-
-  for (uint32_t i = 0; i < pos; i++)
+  for (uint32_t i = 1; i < pos; i++)
     {
       ptr++;
     }
-
   return DoEnqueue (ptr, item);
 
 }
